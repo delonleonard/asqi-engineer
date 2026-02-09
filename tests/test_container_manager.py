@@ -10,6 +10,7 @@ from requests import exceptions as requests_exceptions
 from asqi.config import ContainerConfig
 from asqi.container_manager import (
     _decommission_container,
+    _extract_mounts_from_args,
     _resolve_abs,
     _shutdown_event,
     check_images_availability,
@@ -424,6 +425,31 @@ class TestExtractManifestFromImage:
         result = extract_manifest_from_image("test:latest")
         assert isinstance(result, Manifest)
         mock_container.remove.assert_called_once()
+
+
+class TestExtractMountsFromArgs:
+    """Test _extract_mounts_from_args edge cases (BUG-08)."""
+
+    def test_param_flag_as_last_arg_raises_clear_error(self):
+        """--test-params as the last arg should raise with a helpful message, not 'list index out of range'."""
+        client = MagicMock()
+        args = ["--some-flag", "value", "--test-params"]
+
+        with pytest.raises(MountExtractionError) as exc_info:
+            _extract_mounts_from_args(client, args)
+
+        # The error message should mention the missing value, not just "list index out of range"
+        assert "list index out of range" not in str(exc_info.value)
+
+    def test_generation_params_as_last_arg_raises_clear_error(self):
+        """--generation-params as the last arg should also raise with a helpful message."""
+        client = MagicMock()
+        args = ["--generation-params"]
+
+        with pytest.raises(MountExtractionError) as exc_info:
+            _extract_mounts_from_args(client, args)
+
+        assert "list index out of range" not in str(exc_info.value)
 
 
 class TestRunContainerWithArgs:

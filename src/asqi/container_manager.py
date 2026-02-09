@@ -391,6 +391,10 @@ def _extract_mounts_from_args(
     try:
         PARAM_FLAGS = ("--test-params", "--generation-params")
         idx = next(i for i, v in enumerate(new_args) if v in PARAM_FLAGS)
+        if idx + 1 >= len(new_args):
+            raise ValueError(
+                f"'{new_args[idx]}' flag is missing its value — expected a JSON string after it"
+            )
         raw = new_args[idx + 1]
         tp = json.loads(raw)
 
